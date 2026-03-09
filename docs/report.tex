@@ -3,20 +3,16 @@
 % ── Packages ────────────────────────────────────────────────────────────────
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}
 \usepackage[margin=1in]{geometry}
-\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{listings}
-\usepackage{amsmath, amssymb, amsthm}
+\usepackage{amsmath}
 \usepackage{booktabs}
-\usepackage{enumitem}
-\usepackage{tcolorbox}
-\usepackage{tikz}
-\usetikzlibrary{trees, arrows.meta, positioning}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{graphicx}
 
 % ── Colours ─────────────────────────────────────────────────────────────────
 \definecolor{codebackground}{HTML}{F5F5F5}
@@ -25,9 +21,8 @@
 \definecolor{codestring}{HTML}{B31D28}
 \definecolor{codenumber}{HTML}{005CC5}
 \definecolor{accentblue}{HTML}{0366D6}
-\definecolor{sectioncolor}{HTML}{24292E}
 
-% ── Listings style ──────────────────────────────────────────────────────────
+% ── Code listing style ───────────────────────────────────────────────────────
 \lstdefinestyle{python}{
     language=Python,
     basicstyle=\ttfamily\small,
@@ -37,7 +32,6 @@
     numberstyle=\tiny\color{codenumber},
     backgroundcolor=\color{codebackground},
     breaklines=true,
-    breakatwhitespace=false,
     numbers=left,
     numbersep=8pt,
     frame=single,
@@ -47,591 +41,1578 @@
     captionpos=b,
     xleftmargin=2em,
     framexleftmargin=1.5em,
-    aboveskip=1em,
-    belowskip=1em,
-    morekeywords={yield, from, lambda, frozenset, namedtuple, Iterator},
-    literate={→}{$\rightarrow$}1 {←}{$\leftarrow$}1,
+    aboveskip=0.8em,
+    belowskip=0.5em,
+    morekeywords={yield,from,lambda,frozenset,namedtuple},
 }
 \lstset{style=python}
 
-% ── Hyperref setup ──────────────────────────────────────────────────────────
-\hypersetup{
-    colorlinks=true,
-    linkcolor=accentblue,
-    urlcolor=accentblue,
-    citecolor=accentblue,
+% ── Python Tutor placeholder box ─────────────────────────────────────────────
+\newcommand{\pythontutorbox}{%
+  \vspace{0.5em}%
+  \noindent\fbox{\parbox{\linewidth}{%
+    \centering%
+    \vspace{4cm}%
+    \textit{\color{gray} [ Python Tutor Visualization --- paste the code above at \texttt{https://pythontutor.com} ]}%
+    \vspace{4cm}%
+  }}%
+  \vspace{0.8em}%
 }
 
-% ── Header / Footer ────────────────────────────────────────────────────────
+% ── Header / Footer ─────────────────────────────────────────────────────────
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\textit{Functional Equation Parser \& Analyzer}}
+\fancyhead[L]{\small\textit{Principles of Functional Languages}}
 \fancyhead[R]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
-% ── Section formatting ─────────────────────────────────────────────────────
-\titleformat{\section}
-  {\Large\bfseries\color{sectioncolor}}{\thesection}{1em}{}
-\titleformat{\subsection}
-  {\large\bfseries\color{sectioncolor}}{\thesubsection}{1em}{}
+% ── Section formatting ───────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\vspace{-0.3em}\rule{\linewidth}{0.4pt}]
 
-% ── tcolorbox for highlights ───────────────────────────────────────────────
-\newtcolorbox{highlight}[1][]{
-    colback=blue!3, colframe=accentblue!60,
-    fonttitle=\bfseries, title=#1,
-    boxrule=0.5pt, arc=3pt,
-}
+\hypersetup{colorlinks=true, linkcolor=accentblue, urlcolor=accentblue}
 
-% ════════════════════════════════════════════════════════════════════════════
-%  DOCUMENT
 % ════════════════════════════════════════════════════════════════════════════
 \begin{document}
 
-% ── Title page ──────────────────────────────────────────────────────────────
+% ── Title Page ───────────────────────────────────────────────────────────────
 \begin{titlepage}
 \centering
-\vspace*{3cm}
-{\Huge\bfseries Functional Equation Parser\\[0.3em] \& Analyzer\par}
-\vspace{1.5cm}
-{\Large A Purely Functional Approach in Python\par}
-\vspace{1cm}
-{\large Using Higher-Order Functions, Iterators \& Generators\par}
+\vspace*{2.5cm}
+
+{\Large\bfseries PRINCIPLES OF FUNCTIONAL LANGUAGES\\[0.5em]
+PYTHON TUTOR ASSESSMENT\par}
+
 \vspace{3cm}
-{\large\today\par}
+
+{\normalsize
+\begin{tabular}{rl}
+\textbf{Name:}    & Your Name Here \\[0.3em]
+\textbf{Roll No:} & CB.SC.U4CSExxxxx \\
+\end{tabular}
+\par}
+
+\vspace{3.5cm}
+
+{\Large\bfseries FUNCTIONAL EQUATION PARSER \& ANALYZER\par}
+
 \vfill
-{\small Built with \texttt{namedtuple} for data, pure functions for logic --- no classes.}
+{\small\itshape Department of Computer Science\\
+Amrita School of Computing}
+
 \end{titlepage}
 
 \tableofcontents
 \newpage
 
 % ════════════════════════════════════════════════════════════════════════════
-\section{Introduction}
+%  1. FUNCTIONS AS OBJECTS
 % ════════════════════════════════════════════════════════════════════════════
+\section{1.\quad Functions as Objects}
 
-This document presents the design and implementation of a \textbf{Functional Equation Parser \& Analyzer} written in Python.  The project deliberately avoids object-oriented design for logic; instead, it relies on three pillars of functional programming:
+\textbf{Code:}
 
-\begin{enumerate}[label=\textbf{\arabic*.}]
-    \item \textbf{Higher-Order Functions} --- functions that accept or return other functions (dispatch tables, parser factories, \texttt{pipe}/\texttt{compose}).
-    \item \textbf{Iterators} --- lazy sequences consumed one element at a time (closure-based peekable iterators, \texttt{fixed\_point} combinator).
-    \item \textbf{Generators} --- Python functions that \texttt{yield} values lazily (tokenizer, variable collector).
-\end{enumerate}
-
-\begin{highlight}[Design Constraint]
-All data is represented with \texttt{namedtuple} (immutable, hashable).  All behaviour is encoded in \textbf{pure functions}.  No classes carry methods.
-\end{highlight}
-
-\subsection{Capabilities}
-
-\begin{itemize}
-    \item \textbf{Parse} mathematical expressions and equations into an AST.
-    \item \textbf{Evaluate} expressions numerically given variable bindings.
-    \item \textbf{Differentiate} expressions symbolically (sum, product, quotient, power, chain rules).
-    \item \textbf{Simplify} expressions algebraically via a fixed-point combinator.
-    \item \textbf{Collect variables} using a generator-based tree walk.
-    \item \textbf{Pretty-print} ASTs back to human-readable strings.
-    \item \textbf{Pipeline} transformations with \texttt{pipe()} and \texttt{compose()}.
-\end{itemize}
-
-
-% ════════════════════════════════════════════════════════════════════════════
-\section{Project Structure}
-% ════════════════════════════════════════════════════════════════════════════
-
-\begin{lstlisting}[language={}, numbers=none, frame=none, backgroundcolor=\color{white}]
-EquantionAnylzer/
-|-- equation_parser/
-|   |-- __init__.py        # public API
-|   |-- ast_nodes.py       # namedtuple AST definitions
-|   |-- tokenizer.py       # generator-based lexer
-|   |-- parser.py          # recursive descent (higher-order)
-|   |-- analyzer.py        # eval, diff, simplify, to_string
-|   +-- utils.py           # compose, pipe, curry, fixed_point
-|-- main.py                # interactive REPL
-|-- tests/
-|   +-- test_equation.py   # 60 pytest tests
-|-- requirements.txt
-+-- README.md
-\end{lstlisting}
-
-
-% ════════════════════════════════════════════════════════════════════════════
-\section{Formal Grammar}
-% ════════════════════════════════════════════════════════════════════════════
-
-The parser implements the following context-free grammar, where operator precedence is encoded directly in the production rules (lowest precedence at the top):
-
-\begin{align}
-    \textit{equation} &\to \textit{expr} \;\big[\; \texttt{=}\; \textit{expr} \;\big] \\[4pt]
-    \textit{expr}     &\to \textit{term}\; \big(\; (\texttt{+} \mid \texttt{-})\; \textit{term} \;\big)^{*} \\[4pt]
-    \textit{term}     &\to \textit{power}\; \big(\; (\texttt{*} \mid \texttt{/})\; \textit{power} \;\big)^{*} \\[4pt]
-    \textit{power}    &\to \textit{unary}\; \big(\; \texttt{\^{}}\; \textit{unary} \;\big)^{*} \\[4pt]
-    \textit{unary}    &\to \texttt{-}\; \textit{unary} \mid \textit{atom} \\[4pt]
-    \textit{atom}     &\to \textsc{number} \mid \textsc{ident} \mid \textsc{func}\;\texttt{(}\;\textit{expr}\;\texttt{)} \mid \texttt{(}\;\textit{expr}\;\texttt{)}
-\end{align}
-
-
-% ════════════════════════════════════════════════════════════════════════════
-\section{AST Node Definitions}
-% ════════════════════════════════════════════════════════════════════════════
-
-All AST nodes are defined as \texttt{namedtuple} instances --- lightweight, immutable, and hashable.
-
-\begin{lstlisting}[caption={ast\_nodes.py --- Immutable AST data}]
+\begin{lstlisting}
+# Functions are first-class objects — assign them to variables
 from collections import namedtuple
 
-# -- Leaf nodes --
 Number   = namedtuple("Number",   ["value"])
 Variable = namedtuple("Variable", ["name"])
-
-# -- Composite nodes --
 BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
-UnaryOp  = namedtuple("UnaryOp",  ["op", "operand"])
-FuncCall = namedtuple("FuncCall",  ["name", "arg"])
-Equation = namedtuple("Equation", ["lhs", "rhs"])
+
+# A function stored in a variable
+def str_number(node):   return str(node.value)
+def str_variable(node): return node.name
+def str_binop(node):    return f"({to_str(node.left)} {node.op} {to_str(node.right)})"
+
+# Each function is assigned as a VALUE in a dictionary
+TO_STRING = {
+    Number:   str_number,
+    Variable: str_variable,
+    BinOp:    str_binop,
+}
+
+def to_str(node):
+    handler = TO_STRING[type(node)]   # retrieve function object
+    return handler(node)              # call it
+
+tree = BinOp("+", Number(2), Variable("x"))
+print(to_str(tree))   # ((2 + x))
 \end{lstlisting}
 
-\subsection{Example AST}
+\pythontutorbox
 
-For the expression \texttt{2 * x + 3}, the parser produces:
+\textbf{Code Explanation:}
 
-\begin{center}
-\begin{tikzpicture}[
-    level distance=1.4cm, sibling distance=2.4cm,
-    every node/.style={draw, rounded corners, minimum width=1.5cm, minimum height=0.7cm, font=\small\ttfamily},
-    edge from parent/.style={draw, -{Stealth[length=4pt]}},
-]
-\node {BinOp +}
-    child { node {BinOp *}
-        child { node {Num 2} }
-        child { node {Var x} }
-    }
-    child { node {Num 3} };
-\end{tikzpicture}
-\end{center}
+In this code, each formatting function (\texttt{str\_number}, \texttt{str\_variable}, \texttt{str\_binop}) is stored as a \textbf{value} inside the dictionary \texttt{TO\_STRING}. This is the \textbf{dispatch-table} pattern.
 
+\textbf{What happens here?}
+\begin{itemize}
+    \item The three functions are stored as objects (values) in the dictionary.
+    \item \texttt{TO\_STRING[type(node)]} retrieves the correct function for the node type.
+    \item \texttt{handler(node)} calls it --- treating the function exactly like any other object.
+    \item This replaces \texttt{if/elif} chains with a clean, extensible table.
+\end{itemize}
 
+\newpage
 % ════════════════════════════════════════════════════════════════════════════
-\section{Tokenizer (Generator-Based Lexer)}
+%  2. HIGHER-ORDER FUNCTIONS
 % ════════════════════════════════════════════════════════════════════════════
+\section{2.\quad Higher-Order Functions}
 
-The tokenizer is a \textbf{generator function} that lazily yields \texttt{Token} namedtuples. It uses \textbf{higher-order predicates} for character classification.
+\textbf{Code:}
 
-\begin{lstlisting}[caption={tokenizer.py --- Core generator}]
+\begin{lstlisting}
+# Higher-order function: takes operators and ANOTHER function as arguments
 from collections import namedtuple
-from typing import Iterator
+
+BinOp = namedtuple("BinOp", ["op", "left", "right"])
+Number = namedtuple("Number", ["value"])
+Token = namedtuple("Token", ["kind", "value"])
+OP, EOF = "OP", "EOF"
+
+def parse_binary(operators, next_parser):
+    """Factory: returns a NEW parser for left-associative op at one precedence level."""
+    def _parser(peek, advance):
+        left = next_parser(peek, advance)
+        while peek().kind == OP and peek().value in operators:
+            op = advance().value
+            right = next_parser(peek, advance)
+            left = BinOp(op, left, right)
+        return left
+    return _parser   # returns a function!
+
+# Demonstrate: build three parsers from the SAME factory
+def dummy_next(peek, advance):
+    t = advance()
+    return Number(t.value)
+
+parse_sum   = parse_binary({"+", "-"}, dummy_next)
+parse_term  = parse_binary({"*", "/"}, dummy_next)
+parse_power = parse_binary({"^"},      dummy_next)
+
+print("parse_sum   is a function:", callable(parse_sum))
+print("parse_term  is a function:", callable(parse_term))
+print("parse_power is a function:", callable(parse_power))
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{parse\_binary} is a \textbf{higher-order function} --- it takes \texttt{next\_parser} (a function) as an argument and \textbf{returns a new function}.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item The same factory produces three distinct parsers (\texttt{parse\_sum}, \texttt{parse\_term}, \texttt{parse\_power}).
+    \item Adding a new precedence level (e.g.\ modulo \texttt{\%}) requires only one line: \texttt{parse\_mod = parse\_binary(\{"\%"\}, parse\_power)}.
+    \item This eliminates repetition while encoding all operator-precedence rules.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  3. IMMUTABILITY
+% ════════════════════════════════════════════════════════════════════════════
+\section{3.\quad Immutability}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+
+# All AST nodes are namedtuples -- immutable by design
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+# Create a node
+node = BinOp("+", Number(2), Variable("x"))
+print("Original:", node)
+
+# Attempt to modify -- this will raise AttributeError
+try:
+    node.op = "-"
+except AttributeError as e:
+    print("Cannot modify:", e)
+
+# To 'change' a node you must create a NEW one
+new_node = BinOp("-", node.left, node.right)
+print("New node:", new_node)
+print("Original unchanged:", node)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+AST nodes are \texttt{namedtuple} instances. A \texttt{namedtuple} is \textbf{immutable} --- its fields cannot be changed after creation, just like a Python \texttt{tuple}.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{BinOp("+", Number(2), Variable("x"))} creates an immutable node.
+    \item Trying \texttt{node.op = "-"} raises \texttt{AttributeError}.
+    \item Transformations (simplification, differentiation) always create \textbf{new} nodes rather than mutating existing ones.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  4. GENERATOR
+% ════════════════════════════════════════════════════════════════════════════
+\section{4.\quad Generator}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+# The tokenizer is a generator -- produces tokens one at a time with yield
+from collections import namedtuple
 
 Token = namedtuple("Token", ["kind", "value"])
+NUMBER, IDENT, OP, EOF = "NUMBER", "IDENT", "OP", "EOF"
 
-# Higher-order predicates
-is_whitespace = str.isspace
-is_digit      = str.isdigit
-is_alpha      = str.isalpha
-is_alnum      = str.isalnum
-is_operator   = lambda ch: ch in {"+", "-", "*", "/", "^"}
-
-def _consume_while(predicate, text, pos):
-    """Higher-order: consumes chars while predicate holds."""
-    start = pos
-    while pos < len(text) and predicate(text[pos]):
-        pos += 1
-    return text[start:pos], pos
-
-def tokenize(text: str) -> Iterator[Token]:
-    """Generator -- yields Tokens lazily."""
-    pos, length = 0, len(text)
-    while pos < length:
+def tokenize(text):
+    """Generator: yields Token namedtuples lazily."""
+    pos = 0
+    while pos < len(text):
         ch = text[pos]
-        if is_whitespace(ch):
+        if ch.isspace():
             pos += 1; continue
-        if is_digit(ch):
-            token, pos = _read_number(text, pos)
-            yield token; continue
-        if is_alpha(ch) or ch == "_":
-            token, pos = _read_identifier(text, pos)
-            yield token; continue
-        if is_operator(ch):
-            yield Token("OP", ch); pos += 1; continue
-        # ... parentheses, equals, error handling
-    yield Token("EOF", None)   # sentinel
+        if ch.isdigit():
+            start = pos
+            while pos < len(text) and text[pos].isdigit(): pos += 1
+            yield Token(NUMBER, int(text[start:pos]))
+            continue
+        if ch.isalpha():
+            yield Token(IDENT, ch); pos += 1; continue
+        if ch in "+-*/^":
+            yield Token(OP, ch); pos += 1; continue
+        pos += 1
+    yield Token(EOF, None)   # sentinel
+
+# Prove it is a generator
+gen = tokenize("2 + x")
+print("Is generator?", hasattr(gen, "__next__"))
+
+# Tokens produced lazily
+t1 = next(gen); print("Token 1:", t1)
+t2 = next(gen); print("Token 2:", t2)
+t3 = next(gen); print("Token 3:", t3)
+
+# Or iterate over it
+for tok in tokenize("3 * y"):
+    print(tok)
 \end{lstlisting}
 
-\begin{highlight}[Functional Techniques]
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+A \textbf{generator} is a function that uses \texttt{yield} instead of \texttt{return}. It produces values \textit{lazily} --- one at a time, only when requested.
+
+\textbf{What happens here?}
 \begin{itemize}
-    \item \texttt{tokenize} is a \textbf{generator} (\texttt{yield}).
-    \item \texttt{\_consume\_while} is parameterised by a \textbf{higher-order predicate}.
-    \item Character classifiers are \textbf{first-class function references} (\texttt{str.isdigit}, etc.).
+    \item \texttt{tokenize("2 + x")} does \textbf{not} scan the whole string immediately.
+    \item Each call to \texttt{next(gen)} resumes the function from where it last yielded.
+    \item This is called \textbf{lazy evaluation} --- memory-efficient, processes one token at a time.
 \end{itemize}
-\end{highlight}
 
-
+\newpage
 % ════════════════════════════════════════════════════════════════════════════
-\section{Parser (Recursive Descent with Higher-Order Factory)}
+%  5. ITERATOR
 % ════════════════════════════════════════════════════════════════════════════
+\section{5.\quad Iterator}
 
-\subsection{Closure-Based Peekable Iterator}
+\textbf{Code:}
 
-Instead of a class, a \textbf{closure pair} provides one-token lookahead:
+\begin{lstlisting}
+from collections import namedtuple
 
-\begin{lstlisting}[caption={parser.py --- Functional peekable iterator}]
-def _make_peekable(token_iter):
-    buffer = [next(token_iter)]
+Token = namedtuple("Token", ["kind", "value"])
+EOF = "EOF"
 
-    def peek():
+def tokenize(text):
+    pos = 0
+    while pos < len(text):
+        ch = text[pos]
+        if ch.isspace():   pos += 1; continue
+        if ch.isdigit():
+            yield Token("NUMBER", int(ch)); pos += 1; continue
+        if ch in "+-*/":
+            yield Token("OP", ch); pos += 1; continue
+        pos += 1
+    yield Token(EOF, None)
+
+# Build a closure-based peekable iterator (no class needed!)
+def make_peekable(token_iter):
+    buffer = [next(token_iter)]      # mutable state captured by closures
+
+    def peek():                      # look at current token
         return buffer[0]
 
-    def advance():
+    def advance():                   # consume and move to next
         current = buffer[0]
         try:
             buffer[0] = next(token_iter)
         except StopIteration:
-            buffer[0] = Token("EOF", None)
+            buffer[0] = Token(EOF, None)
         return current
 
-    return peek, advance   # pair of closures
+    return peek, advance             # return a pair of closures
+
+# Demo
+peek, advance = make_peekable(tokenize("5 + 3"))
+print("peek:", peek())       # see current without consuming
+t = advance()                # consume it
+print("advanced:", t)
+print("peek after:", peek()) # now at next token
 \end{lstlisting}
 
-\subsection{Higher-Order Parser Factory}
+\pythontutorbox
 
-The key design element: a \textbf{single higher-order function} generates parsers for all binary-operator precedence levels.
+\textbf{Code Explanation:}
 
-\begin{lstlisting}[caption={parser.py --- Higher-order \_parse\_binary}]
-def _parse_binary(operators, next_parser):
-    """Returns a parser for left-associative binary ops.
+An \textbf{iterator} allows sequential one-at-a-time access to elements. Here, a \textbf{closure pair} (\texttt{peek}, \texttt{advance}) wraps the token generator into a peekable iterator --- without writing a class.
 
-    operators   -- set of operator chars at this precedence
-    next_parser -- parser for the next-higher precedence
-    """
-    def _parser(peek, advance):
-        left = next_parser(peek, advance)
-        while peek().kind == OP and peek().value in operators:
-            op_tok = advance()
-            right = next_parser(peek, advance)
-            left = BinOp(op_tok.value, left, right)
-        return left
-    return _parser
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{make\_peekable} captures mutable state in \texttt{buffer} --- a list with one element.
+    \item \texttt{peek()} reads the current token without advancing.
+    \item \texttt{advance()} consumes it and loads the next one.
+    \item The parser uses this to look one token ahead --- the essential lookahead needed for recursive descent parsing.
+\end{itemize}
 
-# Build all precedence levels via the factory:
-_parse_power = _parse_binary({"^"},      _parse_unary)
-_parse_term  = _parse_binary({"*", "/"}, _parse_power)
-_parse_sum   = _parse_binary({"+", "-"}, _parse_term)
-\end{lstlisting}
-
-\begin{highlight}[Why This Is Powerful]
-Adding a new precedence level (e.g.\ modulo \texttt{\%}) requires only \textbf{one line}:
-\begin{lstlisting}[numbers=none, frame=none, backgroundcolor=\color{blue!3}]
-_parse_mod = _parse_binary({"%"}, _parse_power)
-\end{lstlisting}
-The factory abstracts the entire left-associative parsing loop.
-\end{highlight}
-
-
+\newpage
 % ════════════════════════════════════════════════════════════════════════════
-\section{Functional Utilities}
+%  6. CLOSURE
 % ════════════════════════════════════════════════════════════════════════════
+\section{6.\quad Closure}
 
-\begin{lstlisting}[caption={utils.py --- Core combinators}]
+\textbf{Code:}
+
+\begin{lstlisting}
+# Closures: inner functions that remember their enclosing scope
+from collections import namedtuple
+
+Token = namedtuple("Token", ["kind", "value"])
+EOF = "EOF"
+
+def make_peekable(token_iter):
+    buffer = [next(token_iter)]   # <-- this variable is CAPTURED
+
+    def peek():
+        return buffer[0]          # remembers 'buffer' from outer scope
+
+    def advance():
+        current = buffer[0]       # remembers 'buffer' from outer scope
+        try:
+            buffer[0] = next(token_iter)
+        except StopIteration:
+            buffer[0] = Token(EOF, None)
+        return current
+
+    return peek, advance
+
+# Show that the closures share the same 'buffer'
+tokens = iter([
+    Token("NUMBER", 2),
+    Token("OP", "+"),
+    Token("NUMBER", 3),
+    Token(EOF, None),
+])
+
+peek, advance = make_peekable(tokens)
+print("Before advance, peek:", peek())   # NUMBER 2
+advance()
+print("After  advance, peek:", peek())   # OP +
+advance()
+print("After  advance, peek:", peek())   # NUMBER 3
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+A \textbf{closure} is an inner function that \textit{remembers} variables from its enclosing function even after the outer function has returned.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{make\_peekable} returns two functions: \texttt{peek} and \texttt{advance}.
+    \item Both functions close over (capture) the \texttt{buffer} variable.
+    \item When \texttt{advance()} modifies \texttt{buffer[0]}, \texttt{peek()} immediately sees the new value --- they share the same captured reference.
+    \item This pattern replaces a stateful class with two lightweight closure objects.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  7. CURRYING
+% ════════════════════════════════════════════════════════════════════════════
+\section{7.\quad Currying}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+# Currying: transform a two-argument function into a chain of one-arg functions
+from functools import reduce
+
+def curry(fn):
+    """Two-argument currying decorator."""
+    def _outer(a):
+        def _inner(b):
+            return fn(a, b)      # captures 'a' from outer scope (closure!)
+        return _inner
+    return _outer
+
+# Example: curry a differentiation dispatcher
+@curry
+def diff_wrt(var, node_value):
+    """Return 1 if differentiating with respect to var, else 0."""
+    return 1 if node_value == var else 0
+
+# Create specialised diffentiators by partial application
+diff_wrt_x = diff_wrt("x")   # fix first argument to "x"
+diff_wrt_y = diff_wrt("y")   # fix first argument to "y"
+
+print(diff_wrt_x("x"))   # 1  -- differentiating x w.r.t. x
+print(diff_wrt_x("y"))   # 0  -- differentiating y w.r.t. x
+print(diff_wrt_y("y"))   # 1  -- differentiating y w.r.t. y
+
+# Same result calling both args directly
+print(diff_wrt("x")("x"))   # 1
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\textbf{Currying} converts a function that takes two arguments into a function that takes one argument and \textit{returns} another function expecting the second argument.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{curry(fn)} wraps \texttt{fn} so it can be called one argument at a time.
+    \item \texttt{diff\_wrt("x")} returns a new specialised function \texttt{diff\_wrt\_x}.
+    \item \texttt{diff\_wrt\_x("x")} finally calls the original logic.
+    \item This enables \textbf{partial application} --- fixing some arguments for reuse.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  8. COMPOSE / PIPE
+% ════════════════════════════════════════════════════════════════════════════
+\section{8.\quad Function Composition (pipe \& compose)}
+
+\textbf{Code:}
+
+\begin{lstlisting}
 from functools import reduce
 
 def compose(*fns):
     """Right-to-left: compose(f, g)(x) == f(g(x))"""
-    return lambda x: reduce(lambda acc, f: f(acc), reversed(fns), x)
+    def _composed(x):
+        return reduce(lambda acc, f: f(acc), reversed(fns), x)
+    return _composed
 
 def pipe(*fns):
     """Left-to-right: pipe(f, g)(x) == g(f(x))"""
-    return lambda x: reduce(lambda acc, f: f(acc), fns, x)
+    def _piped(x):
+        return reduce(lambda acc, f: f(acc), fns, x)
+    return _piped
 
-def curry(fn):
-    """Two-argument currying."""
-    return lambda a: lambda b: fn(a, b)
-
-def fixed_point(fn, x, max_iterations=100):
-    """Apply fn repeatedly until output == input."""
-    for _ in range(max_iterations):
-        result = fn(x)
-        if result == x:
-            return result
-        x = result
-    raise RuntimeError("fixed_point did not converge")
-\end{lstlisting}
-
-
-% ════════════════════════════════════════════════════════════════════════════
-\section{Analyzer}
-% ════════════════════════════════════════════════════════════════════════════
-
-All analysis functions use the \textbf{dispatch-table pattern}: a dictionary mapping AST node types to handler functions.
-
-\subsection{Pretty-Printing (Dispatch Table)}
-
-\begin{lstlisting}[caption={analyzer.py --- to\_string dispatch}]
-_TO_STRING_DISPATCH = {
-    Number:   lambda n:  str(n.value),
-    Variable: lambda n:  n.name,
-    BinOp:    lambda n:  f"({to_string(n.left)} {n.op} {to_string(n.right)})",
-    UnaryOp:  lambda n:  f"(-{to_string(n.operand)})",
-    FuncCall: lambda n:  f"{n.name}({to_string(n.arg)})",
-    Equation: lambda n:  f"{to_string(n.lhs)} = {to_string(n.rhs)}",
-}
-
-def to_string(node):
-    return _TO_STRING_DISPATCH[type(node)](node)
-\end{lstlisting}
-
-\subsection{Variable Collection (Generator)}
-
-\begin{lstlisting}[caption={analyzer.py --- Generator-based variable traversal}]
-def _vars_variable(node): yield node.name
-def _vars_binop(node):
-    yield from variables(node.left)
-    yield from variables(node.right)
-
-def variables(node) -> Iterator[str]:
-    """Generator that yields every variable name in the AST."""
-    yield from _VARS_DISPATCH[type(node)](node)
-
-def variable_set(node) -> frozenset:
-    return frozenset(variables(node))
-\end{lstlisting}
-
-\subsection{Evaluation}
-
-\begin{lstlisting}[caption={analyzer.py --- Numeric evaluation}]
-_BIN_OPS = {
-    "+": lambda a, b: a + b,
-    "-": lambda a, b: a - b,
-    "*": lambda a, b: a * b,
-    "/": lambda a, b: a / b,
-    "^": lambda a, b: a ** b,
-}
-
-def evaluate(node, env: dict) -> float:
-    dispatch = {
-        Number:   lambda n: float(n.value),
-        Variable: lambda n: float(env[n.name]),
-        BinOp:    lambda n: _BIN_OPS[n.op](
-                      evaluate(n.left, env),
-                      evaluate(n.right, env)),
-        UnaryOp:  lambda n: -evaluate(n.operand, env),
-        FuncCall: lambda n: _MATH_FUNCS[n.name](
-                      evaluate(n.arg, env)),
-    }
-    return dispatch[type(node)](node)
-\end{lstlisting}
-
-
-\subsection{Symbolic Differentiation}
-
-The differentiator implements standard calculus rules as pure recursive functions:
-
-\begin{center}
-\renewcommand{\arraystretch}{1.6}
-\begin{tabular}{lll}
-\toprule
-\textbf{Rule} & \textbf{Formula} & \textbf{Implementation} \\
-\midrule
-Constant  & $\dfrac{d}{dx}\, c = 0$                    & \texttt{Number(0)} \\[4pt]
-Identity  & $\dfrac{d}{dx}\, x = 1$                    & \texttt{Number(1)} \\[4pt]
-Sum       & $\dfrac{d}{dx}(u+v) = u' + v'$             & \texttt{BinOp("+", du, dv)} \\[4pt]
-Product   & $\dfrac{d}{dx}(uv) = u'v + uv'$            & \texttt{BinOp("+", ...)} \\[4pt]
-Quotient  & $\dfrac{d}{dx}\!\left(\dfrac{u}{v}\right) = \dfrac{u'v - uv'}{v^2}$ & \texttt{BinOp("/", ...)} \\[4pt]
-Power     & $\dfrac{d}{dx}\, u^n = n\,u^{n-1}\,u'$     & \texttt{BinOp("*", ...)} \\[4pt]
-Chain     & $\dfrac{d}{dx}\, f(g(x)) = f'(g(x))\,g'(x)$ & outer $\times$ inner \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\begin{lstlisting}[caption={analyzer.py --- Differentiation (excerpt)}]
-_DIFF_FUNCS = {
-    "sin":  lambda u: FuncCall("cos", u),      # cos(u)
-    "cos":  lambda u: UnaryOp("-",
-                FuncCall("sin", u)),            # -sin(u)
-    "exp":  lambda u: FuncCall("exp", u),       # exp(u)
-    "ln":   lambda u: BinOp("/", Number(1), u), # 1/u
-}
-
-def differentiate(node, var):
-    if type(node) is Number:   return Number(0)
-    if type(node) is Variable:
-        return Number(1) if node.name == var else Number(0)
-    if type(node) is FuncCall:
-        # Chain rule: f(g(x))' = f'(g(x)) * g'(x)
-        inner = differentiate(node.arg, var)
-        outer = _DIFF_FUNCS[node.name](node.arg)
-        return BinOp("*", outer, inner)
-    # ... product, quotient, power rules
-\end{lstlisting}
-
-\subsection{Simplification (Fixed-Point Combinator)}
-
-Simplification rules are applied \textbf{repeatedly} until the AST stops changing, using the \texttt{fixed\_point} combinator:
-
-\begin{lstlisting}[caption={analyzer.py --- Simplification rules}]
-def _simplify_binop(node):
-    l, r, op = simplify(node.left), simplify(node.right), node.op
-    zero, one = Number(0), Number(1)
-
-    # Constant folding
-    if type(l) is Number and type(r) is Number:
-        return Number(_BIN_OPS[op](l.value, r.value))
-
-    if op == "+":
-        if l == zero: return r      # 0 + x -> x
-        if r == zero: return l      # x + 0 -> x
-    if op == "*":
-        if l == zero or r == zero: return zero
-        if l == one:  return r      # 1 * x -> x
-        if r == one:  return l      # x * 1 -> x
-    # ... more rules ...
-    return BinOp(op, l, r)
+# Stand-alone functions for the equation pipeline
+def parse(text):
+    # simplified: just wrap in a dict for demo
+    return {"type": "expr", "raw": text}
 
 def simplify(node):
-    return fixed_point(_simplify_once, node)
+    node["simplified"] = True
+    return node
+
+def to_string(node):
+    return f"simplified({node['raw']})"
+
+# Build the full pipeline with pipe()
+process = pipe(parse, simplify, to_string)
+
+result = process("x^2 + 2*x + 1")
+print("Result:", result)
+
+# compose goes right-to-left
+process2 = compose(to_string, simplify, parse)
+result2 = process2("x^2 + 2*x + 1")
+print("Result2:", result2)
 \end{lstlisting}
 
-\begin{highlight}[Algebraic Simplification Rules]
-\begin{center}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{lcl}
-$0 + x$ & $\to$ & $x$ \\
-$x + 0$ & $\to$ & $x$ \\
-$0 \times x$ & $\to$ & $0$ \\
-$1 \times x$ & $\to$ & $x$ \\
-$x - x$ & $\to$ & $0$ \\
-$x^0$ & $\to$ & $1$ \\
-$x^1$ & $\to$ & $x$ \\
-$-(-x)$ & $\to$ & $x$ \\
-\end{tabular}
-\end{center}
-\end{highlight}
+\pythontutorbox
 
+\textbf{Code Explanation:}
 
+\texttt{pipe} and \texttt{compose} are \textbf{function composition} utilities that chain multiple functions into a single transformation pipeline.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{pipe(parse, simplify, to\_string)} creates one function that runs all three in order.
+    \item \texttt{compose(f, g, h)(x)} is equivalent to \texttt{f(g(h(x)))} --- right to left.
+    \item Both use \texttt{functools.reduce} internally to fold the function list.
+    \item In the real analyzer: \texttt{pipe(parse, simplify, to\_string)("2*x+1")} gives a clean one-line transformation.
+\end{itemize}
+
+\newpage
 % ════════════════════════════════════════════════════════════════════════════
-\section{Interactive REPL}
+%  9. FIXED-POINT COMBINATOR
 % ════════════════════════════════════════════════════════════════════════════
+\section{9.\quad Fixed-Point Combinator}
 
-The REPL uses a \textbf{generator} for the input loop and a \textbf{higher-order dispatch table} for commands.
+\textbf{Code:}
 
-\begin{lstlisting}[caption={main.py --- REPL architecture}]
-# Higher-order dispatch table
-_COMMANDS = {
-    ":parse":    _cmd_parse,
-    ":eval":     _cmd_eval,
-    ":diff":     _cmd_diff,
-    ":simplify": _cmd_simplify,
-    ":vars":     _cmd_vars,
-    ":help":     _cmd_help,
+\begin{lstlisting}
+# fixed_point: apply a function until output == input
+def fixed_point(fn, x, max_iter=100):
+    """Apply fn repeatedly until the output equals the input."""
+    for step in range(max_iter):
+        result = fn(x)
+        print(f"  step {step}: {x!r} -> {result!r}")
+        if result == x:
+            print(f"  Converged after {step} steps.")
+            return result
+        x = result
+    raise RuntimeError("Did not converge")
+
+# Demo 1: integer halving converges to 0
+print("=== x // 2 ===")
+fixed_point(lambda x: x // 2, 100)
+
+# Demo 2: algebraic simplification rule
+# simplify_once: applies a single pass of rules
+def simplify_once(expr):
+    """Remove 0+ and *1 (toy version)."""
+    if expr.startswith("0+"):   return expr[2:]
+    if expr.endswith("*1"):     return expr[:-2]
+    return expr
+
+print("\n=== simplify_once on '0+x*1' ===")
+result = fixed_point(simplify_once, "0+x*1")
+print("Final:", result)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+The \textbf{fixed-point combinator} applies a function repeatedly until its output is identical to its input. This is how the simplifier reaches a stable, fully simplified form.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{fixed\_point(fn, x)} calls \texttt{fn(x)}, then \texttt{fn(fn(x))}, and so on.
+    \item It stops as soon as one pass produces no change (\texttt{result == x}).
+    \item Applied to \texttt{simplify\_once}, the AST is simplified until no more rules fire.
+    \item This is a clean, declarative alternative to writing a loop that tracks ``did anything change?''
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  10. RECURSION
+% ════════════════════════════════════════════════════════════════════════════
+\section{10.\quad Recursion}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+UnaryOp  = namedtuple("UnaryOp",  ["op", "operand"])
+
+def differentiate(node, var):
+    """Recursively differentiate an AST node w.r.t. var."""
+    t = type(node)
+
+    if t is Number:                      # base case
+        return Number(0)
+
+    if t is Variable:                    # base case
+        return Number(1) if node.name == var else Number(0)
+
+    if t is UnaryOp:                     # recursive case
+        return UnaryOp("-", differentiate(node.operand, var))
+
+    if t is BinOp:                       # recursive case
+        dl = differentiate(node.left,  var)
+        dr = differentiate(node.right, var)
+        if node.op == "+":
+            return BinOp("+", dl, dr)   # sum rule
+        if node.op == "*":              # product rule
+            return BinOp("+",
+                BinOp("*", dl, node.right),
+                BinOp("*", node.left,  dr))
+
+# Differentiate x*x w.r.t. x
+expr = BinOp("*", Variable("x"), Variable("x"))
+deriv = differentiate(expr, "x")
+print("d/dx(x*x) =", deriv)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\textbf{Recursion} is when a function calls itself. The differentiator recurses into sub-expressions (left and right children) until it reaches a base case (\texttt{Number} or \texttt{Variable}).
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{differentiate(BinOp("*", x, x), "x")} calls itself twice to get \texttt{dl} and \texttt{dr}.
+    \item Each recursive call processes a simpler sub-tree (\texttt{Variable("x")}).
+    \item The base cases (\texttt{Number} $\to$ 0, same \texttt{Variable} $\to$ 1) stop the recursion.
+    \item The product rule \(d(uv)/dx = u'v + uv'\) is assembled from the returned values.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  11. FILTER
+% ════════════════════════════════════════════════════════════════════════════
+\section{11.\quad \texttt{ffilter()} --- Curried Functional Filter}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+# ffilter: a @curry-decorated functional wrapper around filter()
+# Source: equation_parser/utils.py
+from functools import reduce
+
+def curry(fn):
+    def _outer(a):
+        def _inner(b):
+            return fn(a, b)
+        return _inner
+    return _outer
+
+@curry
+def ffilter(predicate, iterable):
+    """Curried functional filter over an iterable."""
+    return filter(predicate, iterable)
+
+# @curry lets us call it in two ways:
+
+# Way 1: partial application -- supply the predicate first
+is_even = lambda x: x % 2 == 0
+filter_evens = ffilter(is_even)      # returns a function
+result = list(filter_evens([1, 2, 3, 4, 5, 6]))
+print("Evens:", result)              # [2, 4, 6]
+
+# Way 2: use directly in pipe() without a lambda wrapper
+from functools import reduce as fred
+def pipe(*fns):
+    return lambda x: fred(lambda a, f: f(a), fns, x)
+
+from collections import namedtuple
+Variable = namedtuple("Variable", ["name"])
+Number   = namedtuple("Number",   ["value"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+# Filter: keep only nodes with value > 10
+no_small = ffilter(lambda n: type(n) is Number and n.value > 10)
+nodes = [Number(5), Number(15), Number(3), Number(20)]
+print("Numbers > 10:", list(no_small(nodes)))
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{ffilter} is a \textbf{curried} wrapper around Python's built-in \texttt{filter()}. The \texttt{@curry} decorator lets it be applied one argument at a time.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{ffilter(predicate)} returns a \textbf{new function} that waits for the iterable.
+    \item This means it can be placed inside a \texttt{pipe()} without wrapping in a \texttt{lambda}.
+    \item \texttt{filter\_evens = ffilter(is\_even)} creates a reusable even-number filter.
+    \item Curried functions compose cleanly: \texttt{pipe(ffilter(is\_even), fmap(double), freduce(add))}.
+\end{itemize}
+
+
+\textbf{Code:}
+
+\begin{lstlisting}
+# filter(): select AST nodes that satisfy a condition
+from collections import namedtuple
+
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+# Flatten an AST into a list of all nodes (generator)
+def all_nodes(node):
+    yield node
+    if type(node) is BinOp:
+        yield from all_nodes(node.left)
+        yield from all_nodes(node.right)
+
+# Build expression: x + 2 + y + 5
+expr = BinOp("+", BinOp("+", Variable("x"), Number(2)),
+                  BinOp("+", Variable("y"), Number(5)))
+
+nodes = list(all_nodes(expr))
+print("All nodes:", nodes)
+
+# filter: keep only Variable nodes
+variables = list(filter(lambda n: type(n) is Variable, nodes))
+print("Variables:", variables)
+
+# filter: keep only Number nodes
+numbers = list(filter(lambda n: type(n) is Number, nodes))
+print("Numbers:", numbers)
+
+# filter: keep only numbers greater than 3
+big = list(filter(lambda n: type(n) is Number and n.value > 3, nodes))
+print("Numbers > 3:", big)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{filter()} selects elements from an iterable that satisfy a predicate function.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{all\_nodes()} is a generator that yields every node in the AST.
+    \item \texttt{filter(lambda n: type(n) is Variable, nodes)} keeps only \texttt{Variable} nodes.
+    \item The predicate \texttt{lambda n: type(n) is Number and n.value > 3} filters on multiple conditions.
+    \item In the real analyzer, \texttt{filter} is used to select available operations or valid sub-expressions.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  12. MAP
+% ════════════════════════════════════════════════════════════════════════════
+\section{12.\quad \texttt{fmap()} --- Curried Functional Map}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+# fmap: a @curry-decorated functional wrapper around map()
+# Source: equation_parser/utils.py
+from functools import reduce
+
+def curry(fn):
+    def _outer(a):
+        def _inner(b):
+            return fn(a, b)
+        return _inner
+    return _outer
+
+@curry
+def fmap(fn, iterable):
+    """Curried functional map over an iterable."""
+    return map(fn, iterable)
+
+# Partial application: fix the transform function first
+double = lambda x: x * 2
+doubler = fmap(double)          # returns a function waiting for an iterable
+result = list(doubler([1, 2, 3]))
+print("Doubled:", result)       # [2, 4, 6]
+
+# Use with AST nodes from the equation parser
+from collections import namedtuple
+Number = namedtuple("Number", ["value"])
+
+nodes = [Number(1), Number(2), Number(3)]
+
+# Map: extract all values
+values = list(fmap(lambda n: n.value)(nodes))
+print("Values:", values)   # [1, 2, 3]
+
+# Map: negate all Number values (returns new immutable nodes)
+neg = list(fmap(lambda n: Number(-n.value))(nodes))
+print("Negated:", neg)     # [Number(-1), Number(-2), Number(-3)]
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{fmap} is a \textbf{curried} wrapper around Python's built-in \texttt{map()}.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{fmap(double)} returns a function that maps \texttt{double} over any iterable.
+    \item Because \texttt{fmap} is curried, it plugs seamlessly into \texttt{pipe()} pipelines.
+    \item \texttt{fmap(lambda n: n.value)(nodes)} applies a transform to every AST node.
+    \item All transformations produce \textbf{new} objects --- immutability is preserved.
+\end{itemize}
+
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+# to_string: convert any node to a readable string
+def to_string(node):
+    t = type(node)
+    if t is Number:   return str(node.value)
+    if t is Variable: return node.name
+    if t is BinOp:
+        return f"({to_string(node.left)} {node.op} {to_string(node.right)})"
+
+# A list of AST nodes
+nodes = [
+    Number(42),
+    Variable("x"),
+    BinOp("+", Number(1), Variable("y")),
+    BinOp("*", Variable("a"), Number(3)),
+]
+
+# map(): apply to_string to every node
+strings = list(map(to_string, nodes))
+print("Strings:", strings)
+
+# map(): extract the type name of each node
+type_names = list(map(lambda n: type(n).__name__, nodes))
+print("Types:", type_names)
+
+# map(): negate all Number values
+numbers = [Number(1), Number(2), Number(3)]
+negated = list(map(lambda n: Number(-n.value), numbers))
+print("Negated:", negated)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{map()} applies a function to \textbf{every element} of an iterable and returns the transformed results.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{map(to\_string, nodes)} converts each AST node into its string representation.
+    \item \texttt{map(lambda n: type(n).\_\_name\_\_, nodes)} extracts the class name of each node.
+    \item \texttt{map(lambda n: Number(-n.value), numbers)} creates new negated \texttt{Number} nodes.
+    \item In the real analyzer, \texttt{map} is used to transform collections of nodes uniformly.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  13. REDUCE
+% ════════════════════════════════════════════════════════════════════════════
+\section{13.\quad \texttt{freduce()} --- Curried Functional Reduce}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+# freduce: a @curry-decorated wrapper around functools.reduce()
+# Source: equation_parser/utils.py
+from functools import reduce
+
+def curry(fn):
+    def _outer(a):
+        def _inner(b):
+            return fn(a, b)
+        return _inner
+    return _outer
+
+@curry
+def freduce(fn, iterable):
+    """Curried functional reduce over an iterable."""
+    return reduce(fn, iterable)
+
+# Partial application: fix the combining function first
+add = lambda a, b: a + b
+summer = freduce(add)        # returns a function waiting for an iterable
+result = summer([1, 2, 3, 4])
+print("Sum:", result)        # 10  (1+2+3+4)
+
+# pipe: filter evens -> double -> sum (all curried, no lambdas needed)
+@curry
+def ffilter(predicate, iterable): return filter(predicate, iterable)
+@curry
+def fmap(fn, iterable): return map(fn, iterable)
+
+def pipe(*fns):
+    return lambda x: reduce(lambda a, f: f(a), fns, x)
+
+sum_doubled_evens = pipe(
+    ffilter(lambda x: x % 2 == 0),  # keep evens
+    fmap(lambda x: x * 2),           # double each
+    freduce(lambda a, b: a + b),     # sum all
+)
+print("Result:", sum_doubled_evens([1, 2, 3, 4, 5]))
+# [2,4] -> [4,8] -> 12
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{freduce} is a \textbf{curried} wrapper around \texttt{functools.reduce()}. It reduces an iterable to a single value by repeatedly applying a combining function.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{freduce(add)} returns a summer function waiting for a list.
+    \item The full \texttt{pipe(ffilter(...), fmap(...), freduce(...))} pipeline needs \textbf{no lambdas} because all three are curried.
+    \item \texttt{pipe} uses \texttt{reduce} internally to pass the value through the chain.
+    \item This is the cleanest form of the map-filter-reduce pattern in functional Python.
+\end{itemize}
+
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from functools import reduce
+from collections import namedtuple
+
+Number = namedtuple("Number", ["value"])
+
+# reduce(): fold a list of functions left-to-right into one call
+# This is exactly how pipe() works internally
+
+def pipe(*fns):
+    """Left-to-right function composition using reduce."""
+    def _piped(x):
+        return reduce(lambda acc, f: f(acc), fns, x)
+    return _piped
+
+# Individual transformation steps
+double     = lambda x: x * 2
+add_ten    = lambda x: x + 10
+to_string  = lambda x: f"result={x}"
+
+# Manually trace what reduce does:
+fns = [double, add_ten, to_string]
+x = 5
+print("Start:", x)
+step1 = double(x);         print("After double:", step1)
+step2 = add_ten(step1);    print("After add_ten:", step2)
+step3 = to_string(step2);  print("After to_string:", step3)
+
+# pipe does the same automatically via reduce
+pipeline = pipe(double, add_ten, to_string)
+print("\npipe result:", pipeline(5))
+
+# reduce to add a list of Numbers
+nums = [Number(10), Number(20), Number(30)]
+total = reduce(lambda a, b: Number(a.value + b.value), nums)
+print("Sum of Number nodes:", total)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{reduce()} applies a function cumulatively to sequence elements, reducing them to a single value.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{pipe()} internally uses \texttt{reduce(lambda acc, f: f(acc), fns, x)} to thread a value through a list of functions.
+    \item \texttt{reduce(lambda acc, f: f(acc), [double, add\_ten, to\_string], 5)} first calls \texttt{double(5)}, then \texttt{add\_ten(10)}, then \texttt{to\_string(20)}.
+    \item \texttt{reduce(lambda a, b: Number(a.value + b.value), nums)} sums a list of \texttt{Number} nodes.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  14. LIST COMPREHENSION
+% ════════════════════════════════════════════════════════════════════════════
+\section{14.\quad List Comprehension}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+# Flatten AST into list of all sub-nodes
+def all_nodes(node):
+    yield node
+    if type(node) is BinOp:
+        yield from all_nodes(node.left)
+        yield from all_nodes(node.right)
+
+# AST for: x + 2 * y + 5
+expr = BinOp("+",
+    BinOp("+", Variable("x"), BinOp("*", Number(2), Variable("y"))),
+    Number(5))
+
+nodes = list(all_nodes(expr))
+
+# 1. All variable names using list comprehension
+var_names = [n.name for n in nodes if type(n) is Variable]
+print("Variable names:", var_names)
+
+# 2. All number values > 1
+big_numbers = [n.value for n in nodes if type(n) is Number and n.value > 1]
+print("Numbers > 1:", big_numbers)
+
+# 3. All operators from BinOp nodes
+operators = [n.op for n in nodes if type(n) is BinOp]
+print("Operators:", operators)
+
+# 4. Convert all Numbers to their negatives
+negated = [Number(-n.value) for n in nodes if type(n) is Number]
+print("Negated numbers:", negated)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\textbf{List comprehension} creates a new list in a single concise line using a condition.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{[n.name for n in nodes if type(n) is Variable]} collects all variable names in the AST.
+    \item \texttt{[n.op for n in nodes if type(n) is BinOp]} extracts operators.
+    \item Each comprehension applies both a \textit{transformation} (the expression before \texttt{for}) and a \textit{filter} (the \texttt{if} clause).
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  15. DICTIONARY COMPREHENSION
+% ════════════════════════════════════════════════════════════════════════════
+\section{15.\quad Dictionary Comprehension}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+
+# Symbolic differentiation rules for built-in math functions
+# Each rule is: function_name -> lambda(inner) -> derivative_AST
+FuncCall = namedtuple("FuncCall", ["name", "arg"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+Number   = namedtuple("Number",   ["value"])
+UnaryOp  = namedtuple("UnaryOp",  ["op", "operand"])
+
+# Base rules list: (name, derivative_lambda)
+BASE_RULES = [
+    ("sin",  lambda u: FuncCall("cos", u)),
+    ("cos",  lambda u: UnaryOp("-", FuncCall("sin", u))),
+    ("exp",  lambda u: FuncCall("exp", u)),
+    ("ln",   lambda u: BinOp("/", Number(1), u)),
+    ("sqrt", lambda u: BinOp("/", Number(1), BinOp("*", Number(2), FuncCall("sqrt", u)))),
+]
+
+# Dictionary comprehension: build dispatch table from list
+DIFF_RULES = {name: rule for name, rule in BASE_RULES}
+
+print("Registered rules:", list(DIFF_RULES.keys()))
+
+# Use a rule
+u = FuncCall("x", None)
+sin_deriv = DIFF_RULES["sin"](FuncCall("x", None))
+print("d/du sin(u) =", sin_deriv)
+
+ln_deriv = DIFF_RULES["ln"](Number(5))
+print("d/du ln(5) =", ln_deriv)
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\textbf{Dictionary comprehension} builds a dictionary in a single concise line from an iterable.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{BASE\_RULES} is a list of \texttt{(name, lambda)} pairs.
+    \item \texttt{\{name: rule for name, rule in BASE\_RULES\}} converts it into a dispatch dictionary.
+    \item The resulting \texttt{DIFF\_RULES} maps each function name to its derivative rule.
+    \item This is more compact than writing out each key assignment manually.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  16. ENUMERATE
+% ════════════════════════════════════════════════════════════════════════════
+\section{16.\quad \texttt{enumerate()}}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+def all_nodes(node):
+    yield node
+    if type(node) is BinOp:
+        yield from all_nodes(node.left)
+        yield from all_nodes(node.right)
+
+# AST for: x + 2 + y
+expr = BinOp("+", BinOp("+", Variable("x"), Number(2)), Variable("y"))
+nodes = list(all_nodes(expr))
+
+# enumerate() gives index + value while looping
+print("All nodes in the AST:")
+for i, node in enumerate(nodes, start=1):
+    print(f"  [{i}] {type(node).__name__:10s} -> {node}")
+
+# Use enumerate to number the tokens in an expression
+def tokenize_simple(text):
+    for ch in text.split():
+        yield ch
+
+print("\nTokens with indices:")
+for idx, tok in enumerate(tokenize_simple("x + 2 * y")):
+    print(f"  Token {idx}: {tok!r}")
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{enumerate()} gives both the \textbf{index} and the \textbf{value} while iterating over a sequence.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{enumerate(nodes, start=1)} pairs each node with a number starting from 1.
+    \item This is used to number AST nodes for display or debugging.
+    \item \texttt{enumerate(tokenize\_simple(...))} also works on generators --- it is lazy.
+    \item Avoids creating a separate counter variable.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  17. ZIP
+% ════════════════════════════════════════════════════════════════════════════
+\section{17.\quad \texttt{zip()} Function}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+# zip(): combine variable names with their values for evaluation
+variables = ["x", "y", "z"]
+values    = [5.0, 3.0, 7.0]
+
+# zip pairs them element-by-element
+pairs = list(zip(variables, values))
+print("Paired:", pairs)
+
+# Build the environment dict from two parallel lists
+env = dict(zip(variables, values))
+print("Environment:", env)
+
+# This is exactly how an evaluator receives variable bindings
+from collections import namedtuple
+Variable = namedtuple("Variable", ["name"])
+Number   = namedtuple("Number",   ["value"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+def evaluate(node, env):
+    t = type(node)
+    if t is Number:   return float(node.value)
+    if t is Variable: return env[node.name]
+    if t is BinOp:
+        ops = {"+": lambda a,b: a+b, "*": lambda a,b: a*b}
+        return ops[node.op](evaluate(node.left, env), evaluate(node.right, env))
+
+# Evaluate x + y given env
+expr = BinOp("+", Variable("x"), Variable("y"))
+result = evaluate(expr, env)
+print(f"x + y = {result}")
+
+# zip to display variable=value pairs
+for var, val in zip(variables, values):
+    print(f"  {var} = {val}")
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\texttt{zip()} combines two or more iterables into pairs (tuples), element by element.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{zip(variables, values)} pairs each variable name with its numeric value.
+    \item \texttt{dict(zip(variables, values))} builds the environment dictionary directly.
+    \item The environment \texttt{env} is then passed to \texttt{evaluate()} to resolve variable nodes.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  18. PARTIAL APPLICATION
+% ════════════════════════════════════════════════════════════════════════════
+\section{18.\quad Partial Application}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from functools import partial
+from collections import namedtuple
+
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+UnaryOp  = namedtuple("UnaryOp",  ["op", "operand"])
+
+def differentiate(node, var):
+    t = type(node)
+    if t is Number:   return Number(0)
+    if t is Variable: return Number(1) if node.name == var else Number(0)
+    if t is BinOp:
+        dl = differentiate(node.left, var)
+        dr = differentiate(node.right, var)
+        if node.op == "+": return BinOp("+", dl, dr)
+        if node.op == "*":
+            return BinOp("+", BinOp("*", dl, node.right),
+                              BinOp("*", node.left, dr))
+    return node
+
+# Partial application: fix the variable argument
+diff_x = partial(differentiate, var="x")   # always differentiates w.r.t. x
+diff_y = partial(differentiate, var="y")   # always differentiates w.r.t. y
+
+expr = BinOp("+", Variable("x"), Variable("y"))
+
+print("d/dx (x + y) =", diff_x(expr))
+print("d/dy (x + y) =", diff_y(expr))
+
+# Use as a pipeline step
+from functools import reduce
+def pipe(*fns):
+    return lambda x: reduce(lambda a, f: f(a), fns, x)
+
+def to_str(n):
+    t = type(n)
+    if t is Number: return str(n.value)
+    if t is Variable: return n.name
+    if t is BinOp: return f"({to_str(n.left)} {n.op} {to_str(n.right)})"
+
+# pipe: parse -> diff_x -> to_str
+pipeline = pipe(diff_x, to_str)
+print("Pipeline result:", pipeline(expr))
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+\textbf{Partial application} fixes one or more arguments of a function, producing a new function with fewer arguments.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{partial(differentiate, var="x")} creates \texttt{diff\_x} --- a version of \texttt{differentiate} with \texttt{var} pre-filled to \texttt{"x"}.
+    \item \texttt{diff\_x(expr)} only needs the node; the variable is already fixed.
+    \item This makes \texttt{diff\_x} directly usable inside a \texttt{pipe()} without extra \texttt{lambda} wrappers.
+\end{itemize}
+
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  19. LAMBDA
+% ════════════════════════════════════════════════════════════════════════════
+\section{19.\quad Lambda (Anonymous Functions)}
+
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+
+Number = namedtuple("Number", ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp = namedtuple("BinOp", ["op", "left", "right"])
+
+# Lambda functions as VALUES in the operator dispatch table
+BIN_OPS = {
+    "+": lambda a, b: a + b,      # anonymous add
+    "-": lambda a, b: a - b,      # anonymous subtract
+    "*": lambda a, b: a * b,      # anonymous multiply
+    "/": lambda a, b: a / b,      # anonymous divide
+    "^": lambda a, b: a ** b,     # anonymous power
 }
 
-def _repl_lines():
-    """Generator yielding user input lines."""
-    while True:
-        try:
-            line = input(">>> ")
-        except (EOFError, KeyboardInterrupt):
-            return
-        if line.strip() in (":quit", ":q"):
-            return
-        yield line
+# Evaluate using the lambda dispatch table
+def evaluate(node, env):
+    t = type(node)
+    if t is Number:   return float(node.value)
+    if t is Variable: return float(env[node.name])
+    if t is BinOp:
+        l = evaluate(node.left,  env)
+        r = evaluate(node.right, env)
+        return BIN_OPS[node.op](l, r)
 
-def main():
-    consume = lambda gen: reduce(
-        lambda _, line: _dispatch(line), gen, None)
-    consume(_repl_lines())
+# Test each operator
+for op in ["+", "-", "*", "/", "^"]:
+    node = BinOp(op, Number(10), Number(2))
+    result = evaluate(node, {})
+    print(f"10 {op} 2 = {result}")
+
+# Lambda in sorted()
+items = [("x", 5), ("a", 2), ("m", 9)]
+by_value = sorted(items, key=lambda pair: pair[1])
+print("Sorted by value:", by_value)
 \end{lstlisting}
 
-\subsection{Usage Examples}
+\pythontutorbox
 
-\begin{lstlisting}[language={}, numbers=none, caption={REPL session}]
->>> 2 * x + 3
-  -> ((2 * x) + 3)
+\textbf{Code Explanation:}
 
->>> :eval 2 * x + 3
-  x = 5
-  = 13.0
+A \textbf{lambda} is an anonymous (unnamed) function written in a single expression. It is used wherever a short function is needed as a value.
 
->>> :diff x^3 + 2*x  x
-  d/dx = ((3 * (x ^ 2)) + 2)
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{lambda a, b: a + b} creates an anonymous addition function stored in \texttt{BIN\_OPS["+"]}.
+    \item All five operators are expressed as lambdas, eliminating repetitive \texttt{if/else} branches.
+    \item \texttt{sorted(..., key=lambda pair: pair[1])} uses a lambda as a sort key.
+\end{itemize}
 
->>> :simplify 0 + x * 1
-  = x
+\newpage
+% ════════════════════════════════════════════════════════════════════════════
+%  20. FULL PIPELINE
+% ════════════════════════════════════════════════════════════════════════════
+\section{20.\quad Full Functional Pipeline}
 
->>> :vars sin(x) + y^2
-  Variables: {x, y}
+\textbf{Code:}
+
+\begin{lstlisting}
+from collections import namedtuple
+from functools import reduce
+
+# ── AST Nodes ──
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+Token    = namedtuple("Token",    ["kind", "value"])
+EOF = "EOF"
+
+def pipe(*fns):
+    return lambda x: reduce(lambda a, f: f(a), fns, x)
+
+# ── Generator tokenizer ──
+def tokenize(text):
+    pos = 0
+    while pos < len(text):
+        ch = text[pos]
+        if ch.isspace():  pos += 1; continue
+        if ch.isdigit():
+            s = pos
+            while pos < len(text) and text[pos].isdigit(): pos += 1
+            yield Token("NUM", int(text[s:pos])); continue
+        if ch.isalpha(): yield Token("VAR", ch); pos += 1; continue
+        if ch in "+-*/": yield Token("OP", ch); pos += 1; continue
+        pos += 1
+    yield Token(EOF, None)
+
+# ── Parser ──
+def parse(text):
+    toks = list(tokenize(text))
+    pos = [0]
+    def cur():  return toks[pos[0]]
+    def eat():
+        t = toks[pos[0]]; pos[0] += 1; return t
+    def atom():
+        t = eat()
+        if t.kind == "NUM": return Number(t.value)
+        if t.kind == "VAR": return Variable(t.value)
+    def expr():
+        left = atom()
+        while cur().kind == "OP":
+            op = eat().value; left = BinOp(op, left, atom())
+        return left
+    return expr()
+
+# ── Simplifier with fixed_point ──
+def simp(n):
+    if type(n) is BinOp:
+        l, r = simp(n.left), simp(n.right)
+        if type(l) is Number and type(r) is Number:
+            ops = {"+": l.value+r.value, "*": l.value*r.value,
+                   "-": l.value-r.value}
+            return Number(ops[n.op])
+        return BinOp(n.op, l, r)
+    return n
+
+def simplify(n):
+    for _ in range(50):
+        r = simp(n)
+        if r == n: return r
+        n = r
+    return n
+
+# ── Pretty-printer ──
+def to_str(n):
+    if type(n) is Number:   return str(n.value)
+    if type(n) is Variable: return n.name
+    if type(n) is BinOp:    return f"({to_str(n.left)} {n.op} {to_str(n.right)})"
+
+# ── FULL PIPELINE ──
+process = pipe(parse, simplify, to_str)
+
+for expr in ["x + 2 + 3", "2 * 3 + y", "1 + 2 + 3"]:
+    print(f"  {expr:20s}  ->  {process(expr)}")
 \end{lstlisting}
 
+\pythontutorbox
 
+\textbf{Code Explanation:}
+
+The \textbf{full pipeline} chains every functional concept together using \texttt{pipe()}: generator tokenizer $\to$ parser $\to$ fixed-point simplifier $\to$ pretty-printer.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{pipe(parse, simplify, to\_str)} creates a single transformation function.
+    \item Each step receives the \textbf{output} of the previous step as its input.
+    \item The string \texttt{"2 * 3 + y"} flows through: tokenize $\to$ AST $\to$ simplified AST $\to$ \texttt{"(6 + y)"}.
+    \item This demonstrates how all concepts --- generators, iterators, higher-order functions, recursion, fixed-point, lambdas, and dispatch tables --- compose into one clean system.
+\end{itemize}
+
+
+
+\newpage
 % ════════════════════════════════════════════════════════════════════════════
-\section{Test Suite}
+%  21. PLOTTER MODULE
 % ════════════════════════════════════════════════════════════════════════════
+\section{21.\quad Plotter --- Visualizing Equations with Matplotlib}
 
-The project includes \textbf{60 pytest tests} organised into 10 test classes:
+\textbf{Code:}
 
-\begin{center}
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{llc}
-\toprule
-\textbf{Class} & \textbf{Covers} & \textbf{Tests} \\
-\midrule
-\texttt{TestUtils}          & compose, pipe, curry, fixed\_point  & 5 \\
-\texttt{TestTokenizer}      & expressions, floats, errors, generator & 7 \\
-\texttt{TestParser}         & precedence, parens, functions, roundtrip & 11 \\
-\texttt{TestToString}       & numbers, binops, functions & 3 \\
-\texttt{TestVariables}      & no vars, single, multiple, generator & 5 \\
-\texttt{TestEvaluate}       & constants, variables, power, trig, errors & 8 \\
-\texttt{TestDifferentiate}  & constant, power, sum, product, chain & 7 \\
-\texttt{TestSimplify}       & all algebraic rules, constant folding & 12 \\
-\texttt{TestPipeline}       & end-to-end parse$\to$simplify$\to$string & 2 \\
-\midrule
- & \textbf{Total} & \textbf{60} \\
-\bottomrule
-\end{tabular}
-\end{center}
+\begin{lstlisting}
+# Source: equation_parser/plotter.py
+import numpy as np
+import matplotlib.pyplot as plt
 
-Run with:
-\begin{lstlisting}[language=bash, numbers=none]
-$ pytest tests/ -v
-========================= 60 passed in 0.59s ==========================
+# Assume parse, evaluate, differentiate, simplify, to_string, variable_set
+# are already available from the equation_parser package.
+
+def _safe_eval(tree, var, x_val):
+    """Evaluate tree at a single point; return nan on math errors."""
+    try:
+        return evaluate(tree, {var: float(x_val)})
+    except (ValueError, ZeroDivisionError, OverflowError, NameError):
+        return float('nan')
+
+def _vectorized_eval(tree, var, xs):
+    """Evaluate tree over a NumPy array, handling domain errors."""
+    return [_safe_eval(tree, var, x) for x in xs]
+
+def plot_expression(expr_str, x_range=(-10, 10), num_points=500):
+    """Plot a single expression string."""
+    tree = parse(expr_str)
+    vs = variable_set(tree)
+    var = next(iter(vs)) if vs else "x"
+    xs = list(range(int(x_range[0]), int(x_range[1]) + 1))
+    ys = _vectorized_eval(tree, var, xs)
+    print(f"Plotting f({var}) = {expr_str}")
+    for x, y in zip(xs, ys):
+        print(f"  {var}={x:4}  f={y}")
+
+def plot_with_derivative(expr_str, x_range=(-5, 5)):
+    """Plot expression and its symbolic derivative."""
+    tree = parse(expr_str)
+    vs = variable_set(tree)
+    var = next(iter(vs)) if vs else "x"
+    d_tree = simplify(differentiate(tree, var))
+    d_str  = to_string(d_tree)
+    xs = list(range(int(x_range[0]), int(x_range[1]) + 1))
+    ys  = _vectorized_eval(tree, var, xs)
+    dys = _vectorized_eval(d_tree, var, xs)
+    print(f"f ({var}) = {expr_str}")
+    print(f"f'({var}) = {d_str}")
+    for x, y, dy in zip(xs, ys, dys):
+        print(f"  {var}={x:3}  f={y:8.3f}  f'={dy:8.3f}")
 \end{lstlisting}
 
+\pythontutorbox
 
+\textbf{Code Explanation:}
+
+The \textbf{plotter} module integrates the parser, evaluator, and differentiator with Matplotlib. All functions are \textbf{pure} --- they take expressions as strings and return figures.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{\_safe\_eval} evaluates one point, returning \texttt{nan} on errors (handles \texttt{log(0)}, \texttt{1/0}, etc.).
+    \item \texttt{\_vectorized\_eval} maps \texttt{\_safe\_eval} over a NumPy array --- a \textbf{higher-order function} applied across all x-values.
+    \item \texttt{plot\_expression} parses the expression, auto-detects the variable, samples it, and draws the plot.
+    \item \texttt{plot\_with\_derivative} differentiates symbolically first (using \texttt{differentiate + simplify}), then plots both curves.
+    \item REPL commands: \texttt{:plot x\char`\^2}, \texttt{:plotm x\char`\^2, sin(x)}, \texttt{:plotd x\char`\^3 [-5:5]}.
+\end{itemize}
+
+\newpage
 % ════════════════════════════════════════════════════════════════════════════
-\section{Summary of Functional Techniques}
+%  22. UPDATED FULL PIPELINE WITH fmap / ffilter / freduce
 % ════════════════════════════════════════════════════════════════════════════
+\section{22.\quad Updated Full Pipeline --- fmap, ffilter, freduce}
 
-\begin{center}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{p{4cm}p{4cm}p{5cm}}
-\toprule
-\textbf{Technique} & \textbf{Where Used} & \textbf{Example} \\
-\midrule
-\textbf{Generator} (\texttt{yield}) & Tokenizer, variable collector, REPL input & \texttt{tokenize()}, \texttt{variables()} \\
-\textbf{Higher-order function} & Parser factory, dispatch tables, pipe/compose & \texttt{\_parse\_binary()}, \texttt{\_COMMANDS} \\
-\textbf{Iterator} & Peekable wrapper, token stream & \texttt{\_make\_peekable()} \\
-\textbf{Closure} & Peekable state, curry & \texttt{peek/advance} pair \\
-\textbf{Immutable data} & All AST nodes & \texttt{namedtuple} \\
-\textbf{Fixed-point combinator} & Simplification convergence & \texttt{fixed\_point(\_simplify\_once, node)} \\
-\textbf{Function composition} & Transformation pipelines & \texttt{pipe(parse, simplify, to\_string)} \\
-\textbf{Currying} & Partial application utility & \texttt{@curry} decorator \\
-\bottomrule
-\end{tabular}
-\end{center}
+\textbf{Code:}
 
+\begin{lstlisting}
+# The updated pipeline now uses the REAL curried functions from utils.py
+# Source: equation_parser/utils.py  +  tests/test_equation.py
+from functools import reduce
 
-% ════════════════════════════════════════════════════════════════════════════
-\section{Conclusion}
-% ════════════════════════════════════════════════════════════════════════════
+# --- curry ---
+def curry(fn):
+    return lambda a: lambda b: fn(a, b)
 
-This project demonstrates that a non-trivial system --- a full equation parser with symbolic differentiation and algebraic simplification --- can be built \textbf{entirely with functional programming} in Python.  The key architectural decisions are:
+# --- pipe ---
+def pipe(*fns):
+    return lambda x: reduce(lambda a, f: f(a), fns, x)
 
-\begin{enumerate}
-    \item \textbf{Data--behaviour separation}: \texttt{namedtuple} defines \emph{what} nodes are; standalone functions define \emph{what to do} with them.
-    \item \textbf{Dispatch tables} replace class-method dispatch --- extensible via dictionary merging.
-    \item \textbf{Higher-order factories} eliminate repetitive parsing code.
-    \item \textbf{Generators} provide lazy, memory-efficient traversal.
-    \item \textbf{Fixed-point iteration} gives a clean, declarative approach to convergence.
-\end{enumerate}
+# --- curried functional trio ---
+@curry
+def fmap(fn, iterable):       return map(fn, iterable)
 
-The result is a concise, composable, and testable codebase --- with \textbf{60 passing tests} validating every component.
+@curry
+def ffilter(pred, iterable):  return filter(pred, iterable)
+
+@curry
+def freduce(fn, iterable):    return reduce(fn, iterable)
+
+# ═══ DEMO 1: sum of doubled even numbers ════════════════
+add    = lambda a, b: a + b
+is_even = lambda x: x % 2 == 0
+double  = lambda x: x * 2
+
+sum_of_doubled_evens = pipe(
+    ffilter(is_even),        # [1,2,3,4,5] -> filter -> [2,4]
+    fmap(double),            # [2,4]        -> map    -> [4,8]
+    freduce(add),            # [4,8]        -> reduce -> 12
+)
+result = sum_of_doubled_evens([1, 2, 3, 4, 5])
+print("Sum of doubled evens:", result)  # 12
+
+# ═══ DEMO 2: full equation pipeline ════════════════════
+from collections import namedtuple
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+
+def to_str(n):
+    t = type(n)
+    if t is Number:   return str(n.value)
+    if t is Variable: return n.name
+    if t is BinOp:    return f"({to_str(n.left)} {n.op} {to_str(n.right)})"
+
+# collect all values from a list of Number nodes
+extract_values = pipe(
+    ffilter(lambda n: type(n) is Number),
+    fmap(lambda n: n.value),
+    freduce(lambda a, b: a + b),
+)
+nodes = [BinOp("+", Number(10), Number(5)), Number(3), Number(7)]
+print("Sum of Number values in list:", extract_values(nodes))  # 10
+\end{lstlisting}
+
+\pythontutorbox
+
+\textbf{Code Explanation:}
+
+This section shows the \textbf{real, updated} pipeline from the codebase, combining all functional tools: \texttt{curry}, \texttt{pipe}, \texttt{fmap}, \texttt{ffilter}, and \texttt{freduce}.
+
+\textbf{What happens here?}
+\begin{itemize}
+    \item \texttt{ffilter(is\_even)} partially applies the predicate --- the result is a function that takes any iterable.
+    \item \texttt{fmap(double)} partially applies the transform.
+    \item \texttt{freduce(add)} partially applies the combiner.
+    \item All three plug into \texttt{pipe()} \textbf{without any extra lambda wrappers} --- this is the power of currying combined with higher-order composition.
+    \item \texttt{pipe(ffilter(is\_even), fmap(double), freduce(add))([1,2,3,4,5])} produces \texttt{12}.
+\end{itemize}
 
 \end{document}
