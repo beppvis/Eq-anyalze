@@ -10,7 +10,7 @@ from equation_parser.tokenizer import tokenize, Token, NUMBER, IDENT, OP, LPAREN
 from equation_parser.parser import parse
 from equation_parser.ast_nodes import Number, Variable, BinOp, UnaryOp, FuncCall, Equation
 from equation_parser.analyzer import to_string, evaluate, differentiate, simplify, variables, variable_set
-from equation_parser.utils import compose, pipe, curry, fixed_point
+from equation_parser.utils import compose, pipe, curry, fixed_point, fmap, ffilter, freduce
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -41,6 +41,34 @@ class TestUtils:
 
     def test_fixed_point_identity(self):
         assert fixed_point(lambda x: x, 42) == 42
+
+    def test_fmap(self):
+        double = lambda x: x * 2
+        result = list(fmap(double)([1, 2, 3]))
+        assert result == [2, 4, 6]
+
+    def test_ffilter(self):
+        is_even = lambda x: x % 2 == 0
+        result = list(ffilter(is_even)([1, 2, 3, 4]))
+        assert result == [2, 4]
+
+    def test_freduce(self):
+        add = lambda a, b: a + b
+        result = freduce(add)([1, 2, 3, 4])
+        assert result == 10
+        
+    def test_pipeline_with_higher_order(self):
+        # fmap, ffilter, and freduce all work smoothly with pipe
+        add = lambda a, b: a + b
+        is_even = lambda x: x % 2 == 0
+        double = lambda x: x * 2
+        
+        sum_of_doubled_evens = pipe(
+            ffilter(is_even),
+            fmap(double),
+            freduce(add)
+        )
+        assert sum_of_doubled_evens([1, 2, 3, 4, 5]) == 12  # filter gives [2, 4], map gives [4, 8], reduce gives 12
 
 
 # ═══════════════════════════════════════════════════════════════════════════
