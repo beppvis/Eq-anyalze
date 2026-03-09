@@ -1,0 +1,637 @@
+\documentclass[12pt, a4paper]{article}
+
+% ── Packages ────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{trees, arrows.meta, positioning}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+% ── Colours ─────────────────────────────────────────────────────────────────
+\definecolor{codebackground}{HTML}{F5F5F5}
+\definecolor{codekeyword}{HTML}{0060A8}
+\definecolor{codecomment}{HTML}{6A737D}
+\definecolor{codestring}{HTML}{B31D28}
+\definecolor{codenumber}{HTML}{005CC5}
+\definecolor{accentblue}{HTML}{0366D6}
+\definecolor{sectioncolor}{HTML}{24292E}
+
+% ── Listings style ──────────────────────────────────────────────────────────
+\lstdefinestyle{python}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{codekeyword}\bfseries,
+    commentstyle=\color{codecomment}\itshape,
+    stringstyle=\color{codestring},
+    numberstyle=\tiny\color{codenumber},
+    backgroundcolor=\color{codebackground},
+    breaklines=true,
+    breakatwhitespace=false,
+    numbers=left,
+    numbersep=8pt,
+    frame=single,
+    rulecolor=\color{black!20},
+    tabsize=4,
+    showstringspaces=false,
+    captionpos=b,
+    xleftmargin=2em,
+    framexleftmargin=1.5em,
+    aboveskip=1em,
+    belowskip=1em,
+    morekeywords={yield, from, lambda, frozenset, namedtuple, Iterator},
+    literate={→}{$\rightarrow$}1 {←}{$\leftarrow$}1,
+}
+\lstset{style=python}
+
+% ── Hyperref setup ──────────────────────────────────────────────────────────
+\hypersetup{
+    colorlinks=true,
+    linkcolor=accentblue,
+    urlcolor=accentblue,
+    citecolor=accentblue,
+}
+
+% ── Header / Footer ────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{Functional Equation Parser \& Analyzer}}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Section formatting ─────────────────────────────────────────────────────
+\titleformat{\section}
+  {\Large\bfseries\color{sectioncolor}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\large\bfseries\color{sectioncolor}}{\thesubsection}{1em}{}
+
+% ── tcolorbox for highlights ───────────────────────────────────────────────
+\newtcolorbox{highlight}[1][]{
+    colback=blue!3, colframe=accentblue!60,
+    fonttitle=\bfseries, title=#1,
+    boxrule=0.5pt, arc=3pt,
+}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  DOCUMENT
+% ════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Title page ──────────────────────────────────────────────────────────────
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+{\Huge\bfseries Functional Equation Parser\\[0.3em] \& Analyzer\par}
+\vspace{1.5cm}
+{\Large A Purely Functional Approach in Python\par}
+\vspace{1cm}
+{\large Using Higher-Order Functions, Iterators \& Generators\par}
+\vspace{3cm}
+{\large\today\par}
+\vfill
+{\small Built with \texttt{namedtuple} for data, pure functions for logic --- no classes.}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Introduction}
+% ════════════════════════════════════════════════════════════════════════════
+
+This document presents the design and implementation of a \textbf{Functional Equation Parser \& Analyzer} written in Python.  The project deliberately avoids object-oriented design for logic; instead, it relies on three pillars of functional programming:
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item \textbf{Higher-Order Functions} --- functions that accept or return other functions (dispatch tables, parser factories, \texttt{pipe}/\texttt{compose}).
+    \item \textbf{Iterators} --- lazy sequences consumed one element at a time (closure-based peekable iterators, \texttt{fixed\_point} combinator).
+    \item \textbf{Generators} --- Python functions that \texttt{yield} values lazily (tokenizer, variable collector).
+\end{enumerate}
+
+\begin{highlight}[Design Constraint]
+All data is represented with \texttt{namedtuple} (immutable, hashable).  All behaviour is encoded in \textbf{pure functions}.  No classes carry methods.
+\end{highlight}
+
+\subsection{Capabilities}
+
+\begin{itemize}
+    \item \textbf{Parse} mathematical expressions and equations into an AST.
+    \item \textbf{Evaluate} expressions numerically given variable bindings.
+    \item \textbf{Differentiate} expressions symbolically (sum, product, quotient, power, chain rules).
+    \item \textbf{Simplify} expressions algebraically via a fixed-point combinator.
+    \item \textbf{Collect variables} using a generator-based tree walk.
+    \item \textbf{Pretty-print} ASTs back to human-readable strings.
+    \item \textbf{Pipeline} transformations with \texttt{pipe()} and \texttt{compose()}.
+\end{itemize}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Project Structure}
+% ════════════════════════════════════════════════════════════════════════════
+
+\begin{lstlisting}[language={}, numbers=none, frame=none, backgroundcolor=\color{white}]
+EquantionAnylzer/
+|-- equation_parser/
+|   |-- __init__.py        # public API
+|   |-- ast_nodes.py       # namedtuple AST definitions
+|   |-- tokenizer.py       # generator-based lexer
+|   |-- parser.py          # recursive descent (higher-order)
+|   |-- analyzer.py        # eval, diff, simplify, to_string
+|   +-- utils.py           # compose, pipe, curry, fixed_point
+|-- main.py                # interactive REPL
+|-- tests/
+|   +-- test_equation.py   # 60 pytest tests
+|-- requirements.txt
++-- README.md
+\end{lstlisting}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Formal Grammar}
+% ════════════════════════════════════════════════════════════════════════════
+
+The parser implements the following context-free grammar, where operator precedence is encoded directly in the production rules (lowest precedence at the top):
+
+\begin{align}
+    \textit{equation} &\to \textit{expr} \;\big[\; \texttt{=}\; \textit{expr} \;\big] \\[4pt]
+    \textit{expr}     &\to \textit{term}\; \big(\; (\texttt{+} \mid \texttt{-})\; \textit{term} \;\big)^{*} \\[4pt]
+    \textit{term}     &\to \textit{power}\; \big(\; (\texttt{*} \mid \texttt{/})\; \textit{power} \;\big)^{*} \\[4pt]
+    \textit{power}    &\to \textit{unary}\; \big(\; \texttt{\^{}}\; \textit{unary} \;\big)^{*} \\[4pt]
+    \textit{unary}    &\to \texttt{-}\; \textit{unary} \mid \textit{atom} \\[4pt]
+    \textit{atom}     &\to \textsc{number} \mid \textsc{ident} \mid \textsc{func}\;\texttt{(}\;\textit{expr}\;\texttt{)} \mid \texttt{(}\;\textit{expr}\;\texttt{)}
+\end{align}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{AST Node Definitions}
+% ════════════════════════════════════════════════════════════════════════════
+
+All AST nodes are defined as \texttt{namedtuple} instances --- lightweight, immutable, and hashable.
+
+\begin{lstlisting}[caption={ast\_nodes.py --- Immutable AST data}]
+from collections import namedtuple
+
+# -- Leaf nodes --
+Number   = namedtuple("Number",   ["value"])
+Variable = namedtuple("Variable", ["name"])
+
+# -- Composite nodes --
+BinOp    = namedtuple("BinOp",    ["op", "left", "right"])
+UnaryOp  = namedtuple("UnaryOp",  ["op", "operand"])
+FuncCall = namedtuple("FuncCall",  ["name", "arg"])
+Equation = namedtuple("Equation", ["lhs", "rhs"])
+\end{lstlisting}
+
+\subsection{Example AST}
+
+For the expression \texttt{2 * x + 3}, the parser produces:
+
+\begin{center}
+\begin{tikzpicture}[
+    level distance=1.4cm, sibling distance=2.4cm,
+    every node/.style={draw, rounded corners, minimum width=1.5cm, minimum height=0.7cm, font=\small\ttfamily},
+    edge from parent/.style={draw, -{Stealth[length=4pt]}},
+]
+\node {BinOp +}
+    child { node {BinOp *}
+        child { node {Num 2} }
+        child { node {Var x} }
+    }
+    child { node {Num 3} };
+\end{tikzpicture}
+\end{center}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Tokenizer (Generator-Based Lexer)}
+% ════════════════════════════════════════════════════════════════════════════
+
+The tokenizer is a \textbf{generator function} that lazily yields \texttt{Token} namedtuples. It uses \textbf{higher-order predicates} for character classification.
+
+\begin{lstlisting}[caption={tokenizer.py --- Core generator}]
+from collections import namedtuple
+from typing import Iterator
+
+Token = namedtuple("Token", ["kind", "value"])
+
+# Higher-order predicates
+is_whitespace = str.isspace
+is_digit      = str.isdigit
+is_alpha      = str.isalpha
+is_alnum      = str.isalnum
+is_operator   = lambda ch: ch in {"+", "-", "*", "/", "^"}
+
+def _consume_while(predicate, text, pos):
+    """Higher-order: consumes chars while predicate holds."""
+    start = pos
+    while pos < len(text) and predicate(text[pos]):
+        pos += 1
+    return text[start:pos], pos
+
+def tokenize(text: str) -> Iterator[Token]:
+    """Generator -- yields Tokens lazily."""
+    pos, length = 0, len(text)
+    while pos < length:
+        ch = text[pos]
+        if is_whitespace(ch):
+            pos += 1; continue
+        if is_digit(ch):
+            token, pos = _read_number(text, pos)
+            yield token; continue
+        if is_alpha(ch) or ch == "_":
+            token, pos = _read_identifier(text, pos)
+            yield token; continue
+        if is_operator(ch):
+            yield Token("OP", ch); pos += 1; continue
+        # ... parentheses, equals, error handling
+    yield Token("EOF", None)   # sentinel
+\end{lstlisting}
+
+\begin{highlight}[Functional Techniques]
+\begin{itemize}
+    \item \texttt{tokenize} is a \textbf{generator} (\texttt{yield}).
+    \item \texttt{\_consume\_while} is parameterised by a \textbf{higher-order predicate}.
+    \item Character classifiers are \textbf{first-class function references} (\texttt{str.isdigit}, etc.).
+\end{itemize}
+\end{highlight}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Parser (Recursive Descent with Higher-Order Factory)}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{Closure-Based Peekable Iterator}
+
+Instead of a class, a \textbf{closure pair} provides one-token lookahead:
+
+\begin{lstlisting}[caption={parser.py --- Functional peekable iterator}]
+def _make_peekable(token_iter):
+    buffer = [next(token_iter)]
+
+    def peek():
+        return buffer[0]
+
+    def advance():
+        current = buffer[0]
+        try:
+            buffer[0] = next(token_iter)
+        except StopIteration:
+            buffer[0] = Token("EOF", None)
+        return current
+
+    return peek, advance   # pair of closures
+\end{lstlisting}
+
+\subsection{Higher-Order Parser Factory}
+
+The key design element: a \textbf{single higher-order function} generates parsers for all binary-operator precedence levels.
+
+\begin{lstlisting}[caption={parser.py --- Higher-order \_parse\_binary}]
+def _parse_binary(operators, next_parser):
+    """Returns a parser for left-associative binary ops.
+
+    operators   -- set of operator chars at this precedence
+    next_parser -- parser for the next-higher precedence
+    """
+    def _parser(peek, advance):
+        left = next_parser(peek, advance)
+        while peek().kind == OP and peek().value in operators:
+            op_tok = advance()
+            right = next_parser(peek, advance)
+            left = BinOp(op_tok.value, left, right)
+        return left
+    return _parser
+
+# Build all precedence levels via the factory:
+_parse_power = _parse_binary({"^"},      _parse_unary)
+_parse_term  = _parse_binary({"*", "/"}, _parse_power)
+_parse_sum   = _parse_binary({"+", "-"}, _parse_term)
+\end{lstlisting}
+
+\begin{highlight}[Why This Is Powerful]
+Adding a new precedence level (e.g.\ modulo \texttt{\%}) requires only \textbf{one line}:
+\begin{lstlisting}[numbers=none, frame=none, backgroundcolor=\color{blue!3}]
+_parse_mod = _parse_binary({"%"}, _parse_power)
+\end{lstlisting}
+The factory abstracts the entire left-associative parsing loop.
+\end{highlight}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Functional Utilities}
+% ════════════════════════════════════════════════════════════════════════════
+
+\begin{lstlisting}[caption={utils.py --- Core combinators}]
+from functools import reduce
+
+def compose(*fns):
+    """Right-to-left: compose(f, g)(x) == f(g(x))"""
+    return lambda x: reduce(lambda acc, f: f(acc), reversed(fns), x)
+
+def pipe(*fns):
+    """Left-to-right: pipe(f, g)(x) == g(f(x))"""
+    return lambda x: reduce(lambda acc, f: f(acc), fns, x)
+
+def curry(fn):
+    """Two-argument currying."""
+    return lambda a: lambda b: fn(a, b)
+
+def fixed_point(fn, x, max_iterations=100):
+    """Apply fn repeatedly until output == input."""
+    for _ in range(max_iterations):
+        result = fn(x)
+        if result == x:
+            return result
+        x = result
+    raise RuntimeError("fixed_point did not converge")
+\end{lstlisting}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Analyzer}
+% ════════════════════════════════════════════════════════════════════════════
+
+All analysis functions use the \textbf{dispatch-table pattern}: a dictionary mapping AST node types to handler functions.
+
+\subsection{Pretty-Printing (Dispatch Table)}
+
+\begin{lstlisting}[caption={analyzer.py --- to\_string dispatch}]
+_TO_STRING_DISPATCH = {
+    Number:   lambda n:  str(n.value),
+    Variable: lambda n:  n.name,
+    BinOp:    lambda n:  f"({to_string(n.left)} {n.op} {to_string(n.right)})",
+    UnaryOp:  lambda n:  f"(-{to_string(n.operand)})",
+    FuncCall: lambda n:  f"{n.name}({to_string(n.arg)})",
+    Equation: lambda n:  f"{to_string(n.lhs)} = {to_string(n.rhs)}",
+}
+
+def to_string(node):
+    return _TO_STRING_DISPATCH[type(node)](node)
+\end{lstlisting}
+
+\subsection{Variable Collection (Generator)}
+
+\begin{lstlisting}[caption={analyzer.py --- Generator-based variable traversal}]
+def _vars_variable(node): yield node.name
+def _vars_binop(node):
+    yield from variables(node.left)
+    yield from variables(node.right)
+
+def variables(node) -> Iterator[str]:
+    """Generator that yields every variable name in the AST."""
+    yield from _VARS_DISPATCH[type(node)](node)
+
+def variable_set(node) -> frozenset:
+    return frozenset(variables(node))
+\end{lstlisting}
+
+\subsection{Evaluation}
+
+\begin{lstlisting}[caption={analyzer.py --- Numeric evaluation}]
+_BIN_OPS = {
+    "+": lambda a, b: a + b,
+    "-": lambda a, b: a - b,
+    "*": lambda a, b: a * b,
+    "/": lambda a, b: a / b,
+    "^": lambda a, b: a ** b,
+}
+
+def evaluate(node, env: dict) -> float:
+    dispatch = {
+        Number:   lambda n: float(n.value),
+        Variable: lambda n: float(env[n.name]),
+        BinOp:    lambda n: _BIN_OPS[n.op](
+                      evaluate(n.left, env),
+                      evaluate(n.right, env)),
+        UnaryOp:  lambda n: -evaluate(n.operand, env),
+        FuncCall: lambda n: _MATH_FUNCS[n.name](
+                      evaluate(n.arg, env)),
+    }
+    return dispatch[type(node)](node)
+\end{lstlisting}
+
+
+\subsection{Symbolic Differentiation}
+
+The differentiator implements standard calculus rules as pure recursive functions:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.6}
+\begin{tabular}{lll}
+\toprule
+\textbf{Rule} & \textbf{Formula} & \textbf{Implementation} \\
+\midrule
+Constant  & $\dfrac{d}{dx}\, c = 0$                    & \texttt{Number(0)} \\[4pt]
+Identity  & $\dfrac{d}{dx}\, x = 1$                    & \texttt{Number(1)} \\[4pt]
+Sum       & $\dfrac{d}{dx}(u+v) = u' + v'$             & \texttt{BinOp("+", du, dv)} \\[4pt]
+Product   & $\dfrac{d}{dx}(uv) = u'v + uv'$            & \texttt{BinOp("+", ...)} \\[4pt]
+Quotient  & $\dfrac{d}{dx}\!\left(\dfrac{u}{v}\right) = \dfrac{u'v - uv'}{v^2}$ & \texttt{BinOp("/", ...)} \\[4pt]
+Power     & $\dfrac{d}{dx}\, u^n = n\,u^{n-1}\,u'$     & \texttt{BinOp("*", ...)} \\[4pt]
+Chain     & $\dfrac{d}{dx}\, f(g(x)) = f'(g(x))\,g'(x)$ & outer $\times$ inner \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}[caption={analyzer.py --- Differentiation (excerpt)}]
+_DIFF_FUNCS = {
+    "sin":  lambda u: FuncCall("cos", u),      # cos(u)
+    "cos":  lambda u: UnaryOp("-",
+                FuncCall("sin", u)),            # -sin(u)
+    "exp":  lambda u: FuncCall("exp", u),       # exp(u)
+    "ln":   lambda u: BinOp("/", Number(1), u), # 1/u
+}
+
+def differentiate(node, var):
+    if type(node) is Number:   return Number(0)
+    if type(node) is Variable:
+        return Number(1) if node.name == var else Number(0)
+    if type(node) is FuncCall:
+        # Chain rule: f(g(x))' = f'(g(x)) * g'(x)
+        inner = differentiate(node.arg, var)
+        outer = _DIFF_FUNCS[node.name](node.arg)
+        return BinOp("*", outer, inner)
+    # ... product, quotient, power rules
+\end{lstlisting}
+
+\subsection{Simplification (Fixed-Point Combinator)}
+
+Simplification rules are applied \textbf{repeatedly} until the AST stops changing, using the \texttt{fixed\_point} combinator:
+
+\begin{lstlisting}[caption={analyzer.py --- Simplification rules}]
+def _simplify_binop(node):
+    l, r, op = simplify(node.left), simplify(node.right), node.op
+    zero, one = Number(0), Number(1)
+
+    # Constant folding
+    if type(l) is Number and type(r) is Number:
+        return Number(_BIN_OPS[op](l.value, r.value))
+
+    if op == "+":
+        if l == zero: return r      # 0 + x -> x
+        if r == zero: return l      # x + 0 -> x
+    if op == "*":
+        if l == zero or r == zero: return zero
+        if l == one:  return r      # 1 * x -> x
+        if r == one:  return l      # x * 1 -> x
+    # ... more rules ...
+    return BinOp(op, l, r)
+
+def simplify(node):
+    return fixed_point(_simplify_once, node)
+\end{lstlisting}
+
+\begin{highlight}[Algebraic Simplification Rules]
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{lcl}
+$0 + x$ & $\to$ & $x$ \\
+$x + 0$ & $\to$ & $x$ \\
+$0 \times x$ & $\to$ & $0$ \\
+$1 \times x$ & $\to$ & $x$ \\
+$x - x$ & $\to$ & $0$ \\
+$x^0$ & $\to$ & $1$ \\
+$x^1$ & $\to$ & $x$ \\
+$-(-x)$ & $\to$ & $x$ \\
+\end{tabular}
+\end{center}
+\end{highlight}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Interactive REPL}
+% ════════════════════════════════════════════════════════════════════════════
+
+The REPL uses a \textbf{generator} for the input loop and a \textbf{higher-order dispatch table} for commands.
+
+\begin{lstlisting}[caption={main.py --- REPL architecture}]
+# Higher-order dispatch table
+_COMMANDS = {
+    ":parse":    _cmd_parse,
+    ":eval":     _cmd_eval,
+    ":diff":     _cmd_diff,
+    ":simplify": _cmd_simplify,
+    ":vars":     _cmd_vars,
+    ":help":     _cmd_help,
+}
+
+def _repl_lines():
+    """Generator yielding user input lines."""
+    while True:
+        try:
+            line = input(">>> ")
+        except (EOFError, KeyboardInterrupt):
+            return
+        if line.strip() in (":quit", ":q"):
+            return
+        yield line
+
+def main():
+    consume = lambda gen: reduce(
+        lambda _, line: _dispatch(line), gen, None)
+    consume(_repl_lines())
+\end{lstlisting}
+
+\subsection{Usage Examples}
+
+\begin{lstlisting}[language={}, numbers=none, caption={REPL session}]
+>>> 2 * x + 3
+  -> ((2 * x) + 3)
+
+>>> :eval 2 * x + 3
+  x = 5
+  = 13.0
+
+>>> :diff x^3 + 2*x  x
+  d/dx = ((3 * (x ^ 2)) + 2)
+
+>>> :simplify 0 + x * 1
+  = x
+
+>>> :vars sin(x) + y^2
+  Variables: {x, y}
+\end{lstlisting}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Test Suite}
+% ════════════════════════════════════════════════════════════════════════════
+
+The project includes \textbf{60 pytest tests} organised into 10 test classes:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{llc}
+\toprule
+\textbf{Class} & \textbf{Covers} & \textbf{Tests} \\
+\midrule
+\texttt{TestUtils}          & compose, pipe, curry, fixed\_point  & 5 \\
+\texttt{TestTokenizer}      & expressions, floats, errors, generator & 7 \\
+\texttt{TestParser}         & precedence, parens, functions, roundtrip & 11 \\
+\texttt{TestToString}       & numbers, binops, functions & 3 \\
+\texttt{TestVariables}      & no vars, single, multiple, generator & 5 \\
+\texttt{TestEvaluate}       & constants, variables, power, trig, errors & 8 \\
+\texttt{TestDifferentiate}  & constant, power, sum, product, chain & 7 \\
+\texttt{TestSimplify}       & all algebraic rules, constant folding & 12 \\
+\texttt{TestPipeline}       & end-to-end parse$\to$simplify$\to$string & 2 \\
+\midrule
+ & \textbf{Total} & \textbf{60} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Run with:
+\begin{lstlisting}[language=bash, numbers=none]
+$ pytest tests/ -v
+========================= 60 passed in 0.59s ==========================
+\end{lstlisting}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Summary of Functional Techniques}
+% ════════════════════════════════════════════════════════════════════════════
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{4cm}p{4cm}p{5cm}}
+\toprule
+\textbf{Technique} & \textbf{Where Used} & \textbf{Example} \\
+\midrule
+\textbf{Generator} (\texttt{yield}) & Tokenizer, variable collector, REPL input & \texttt{tokenize()}, \texttt{variables()} \\
+\textbf{Higher-order function} & Parser factory, dispatch tables, pipe/compose & \texttt{\_parse\_binary()}, \texttt{\_COMMANDS} \\
+\textbf{Iterator} & Peekable wrapper, token stream & \texttt{\_make\_peekable()} \\
+\textbf{Closure} & Peekable state, curry & \texttt{peek/advance} pair \\
+\textbf{Immutable data} & All AST nodes & \texttt{namedtuple} \\
+\textbf{Fixed-point combinator} & Simplification convergence & \texttt{fixed\_point(\_simplify\_once, node)} \\
+\textbf{Function composition} & Transformation pipelines & \texttt{pipe(parse, simplify, to\_string)} \\
+\textbf{Currying} & Partial application utility & \texttt{@curry} decorator \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Conclusion}
+% ════════════════════════════════════════════════════════════════════════════
+
+This project demonstrates that a non-trivial system --- a full equation parser with symbolic differentiation and algebraic simplification --- can be built \textbf{entirely with functional programming} in Python.  The key architectural decisions are:
+
+\begin{enumerate}
+    \item \textbf{Data--behaviour separation}: \texttt{namedtuple} defines \emph{what} nodes are; standalone functions define \emph{what to do} with them.
+    \item \textbf{Dispatch tables} replace class-method dispatch --- extensible via dictionary merging.
+    \item \textbf{Higher-order factories} eliminate repetitive parsing code.
+    \item \textbf{Generators} provide lazy, memory-efficient traversal.
+    \item \textbf{Fixed-point iteration} gives a clean, declarative approach to convergence.
+\end{enumerate}
+
+The result is a concise, composable, and testable codebase --- with \textbf{60 passing tests} validating every component.
+
+\end{document}
